@@ -15,14 +15,16 @@
  */
 
 var ForestGame = (function() {
-    var canvas = document.querySelector('#viewport'),
-        width = undefined,
-        height = undefined,
+    var canvas = undefined,
+        width = 704,
+        height = 480,
         philo = undefined,
         camera = undefined,
         gl = undefined,
-        scene = undefined;
-        
+        scene = undefined,
+        walkSpeed = 0.2,
+        rotationSpeed = 0.3;
+    
     var keyMap = {
         'up'    : [87, 38], // w and up arrow
         'down'  : [83, 40], // s and down arrow
@@ -53,9 +55,29 @@ var ForestGame = (function() {
         if (direction === undefined) {
             return;
         }
-
         
+        var cameraPos = camera.position;
+    
+        switch (direction) {
+            case 'up':
+                cameraPos[2] += walkSpeed;
+                break;
+            case 'down': 
+                cameraPos[2] -= walkSpeed;
+                break;
+            case 'left':
+                cameraPos[0] -= walkSpeed;
+                break;
+            case 'right':
+                cameraPos[0] += walkSpeed;
+                break;
+        }
+        
+        moveCamera(cameraPos);
+        render();
     }
+    
+    
 
     /**
      * Handle when the player stops sending input.
@@ -109,11 +131,29 @@ var ForestGame = (function() {
     }
     
     /**
+     * Adjust the fog settings in the scene.
+     * @param {float} nearDist Where the fog starts.
+     * @param {float} farDist Where the fog ends.
+     * @param {array} color The r,g,b colour values of the fog.
+     */
+    function adjustFog(nearDist, farDist, colour) {
+        scene.config.effects.fog = {};
+        scene.config.effects.fog.near = nearDist;
+        scene.config.effects.fog.far = farDist;
+        scene.config.effects.fog.color = {
+            r: colour[0],
+            g: colour[1],
+            b: colour[2]
+        };
+    }
+    
+    /**
      * Sets the camera to a new position.
      * @param {array} position The x,y,z coordinates of the new position.
      */
     function moveCamera(position) {
         camera.position = position;
+        camera.target = [position[0], position[1], 100];
         camera.update();
     }
     
@@ -121,11 +161,22 @@ var ForestGame = (function() {
      * Add 3D objects to the scene.
      */
     function addObjects() {
-        var ball = new PhiloGL.O3D.Sphere({ nlat: 20, nlong: 20, radius: 1, colors: [1, 0, 0, 1] });
-        ball.position = {  x: 0, y: 0, z: 2 };
+        var ball = new PhiloGL.O3D.Sphere({ nlat: 20, nlong: 20, radius: 1, colors: [1, 1, 1, 1] });
+        ball.position = {  x: 0, y: 3, z: 2 };
         ball.update();
         
+        var ground = new PhiloGL.O3D.Plane({
+            type: 'x,z',
+            xlen: 200,
+            zlen: 200,
+            nx: 5,
+            nz: 5,
+            offset: 0,
+            colors: [1, 1, 1, 1]
+        });
+        
         scene.add(ball);
+        scene.add(ground);
     }
     
     /**
@@ -136,7 +187,8 @@ var ForestGame = (function() {
         illuminateScene([0.2, 0.2, 0.2], [0.8, 0.8, 0.8]);
         aimLight([-2, -5, -7]);
         addObjects();
-        moveCamera([0, 0, -7]);
+        moveCamera([0, 3, -7]);
+        adjustFog(2, 60, [0.3, 0, 0]);
         render();
     }
     
@@ -149,9 +201,26 @@ var ForestGame = (function() {
     }
     
     /**
+     * Create a canvas element and add it to the DOM.
+     * @return {object} Canvas DOM element.
+     */
+    function createCanvas() {
+        var canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        
+        var target = document.querySelector('#oldCRT');
+        target.appendChild(canvas);
+        
+        return canvas;
+    }
+    
+    /**
      * Kick everything off and build the scene up.
      */
     function init() {
+        canvas = createCanvas();
+        
         PhiloGL(canvas, {
             events: {
                 'onKeyDown': startMoving,

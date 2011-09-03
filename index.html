@@ -1,48 +1,22 @@
 <html>
 <head>
-	<title>Forest</title>
-	<link href="../lessons.css" type="text/css" rel="stylesheet" media="screen" />
+	<title>Dark Forest. Experiments with WebGL</title>
 </head>
-
 	<body>
-		<canvas id="viewport" width="704" height="480"></canvas>
+		<div id="oldCRT">
+            <noscript>
+                <p>
+                    Please enable JavaScript and use a modern browser such as
+                    Chrome, FireFox or Opera. Thanks.
+                </p>
+            </noscript>
+        </div>
+        
+        <h2>Instructions</h2>
+        <p>Use <code>w,a,s,d</code> or <code>&uarr; &darr; &larr; &rarr;</code> keys to move about.</p>
 
-		
-	
-
-<script id="shader-fs" type="x-shader/x-fragment">
-  #ifdef GL_ES
-  precision highp float;
-  #endif
-
-  varying vec4 vColor;
-
-  void main(void) {
-    gl_FragColor = vColor;
-  }
-</script>
-
-<script id="shader-vs" type="x-shader/x-vertex">
-  attribute vec3 aVertexPosition;
-  attribute vec4 aVertexColor;
-
-  uniform mat4 uMVMatrix;
-  uniform mat4 uPMatrix;
-
-  varying vec4 vColor;
-
-  void main(void) {
-    gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);
-    vColor = aVertexColor;
-  }
-</script>
-
-
-	
-		
 		<script type="text/javascript" src="scripts/PhiloGL.js"></script>
 		<script type="text/javascript" src="scripts/forest.js"></script>
 	</body>
-
 </html>
 
