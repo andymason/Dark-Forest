@@ -12,6 +12,9 @@
  * Thanks to PhiloGl for the great framework and http://metamolecular.com for
  * a very good introduction to WebGL.
  *
+ * TODO:
+ *      - The player rotation and movement is broken and needs fixing.
+ *
  */
 
 var ForestGame = (function() {
@@ -22,8 +25,14 @@ var ForestGame = (function() {
         camera = undefined,
         gl = undefined,
         scene = undefined,
-        walkSpeed = 0.2,
-        rotationSpeed = 0.3;
+        animationLoop = undefined,
+        player = {
+            'walkingSpeed'  : 0.2,
+            'turningSpeed'  : 0.1,
+            'directionAngle': 0,
+            'directionAngleCount': 0,
+            'walking'       : false
+        };
     
     var keyMap = {
         'up'    : [87, 38], // w and up arrow
@@ -56,24 +65,35 @@ var ForestGame = (function() {
             return;
         }
         
-        var cameraPos = camera.position;
+        var cameraPos = camera.position,
+            targetPos = camera.target;
+        
     
         switch (direction) {
             case 'up':
-                cameraPos[2] += walkSpeed;
+                cameraPos[2] += player.walkingSpeed;
                 break;
             case 'down': 
-                cameraPos[2] -= walkSpeed;
+                cameraPos[2] -= player.walkingSpeed;
                 break;
             case 'left':
-                cameraPos[0] -= walkSpeed;
+                // TODO: Fix rotation
+                player.directionAngleCount += 0.1;
+                player.directionAngle = Math.sin(player.directionAngleCount);
                 break;
             case 'right':
-                cameraPos[0] += walkSpeed;
+                player.directionAngleCount -= 0.1;
+                player.directionAngle = Math.sin(player.directionAngleCount);
                 break;
         }
         
-        moveCamera(cameraPos);
+        // TODO: Fix rotation
+        targetPos[0] = Math.asin(player.directionAngle) * 40;
+        targetPos[1] = Math.acos(player.directionAngle) * 40;
+        
+        console.log(targetPos);
+        
+        moveCamera(cameraPos, targetPos);
         render();
     }
     
@@ -83,7 +103,7 @@ var ForestGame = (function() {
      * Handle when the player stops sending input.
      */
     function stopMoving(event) {
-        //console.log(event);
+        console.log(getInputDirection(event.event.keyCode));
     }
     
     
@@ -150,10 +170,11 @@ var ForestGame = (function() {
     /**
      * Sets the camera to a new position.
      * @param {array} position The x,y,z coordinates of the new position.
+     * @param {array} target The x,y coordinates of the new target.
      */
-    function moveCamera(position) {
+    function moveCamera(position, target) {
         camera.position = position;
-        camera.target = [position[0], position[1], 100];
+        camera.target = [target[0], position[1], target[1]];
         camera.update();
     }
     
@@ -165,6 +186,12 @@ var ForestGame = (function() {
         ball.position = {  x: 0, y: 3, z: 2 };
         ball.update();
         
+        
+        var cube = new PhiloGL.O3D.Cube({ colors: [1, 1, 1, 1] });
+        cube.position = {  x: 3, y: 1, z: 0 };
+        // cube.rotation = {  x: 0.4, y: 0, z: 0 };
+        cube.update();
+        
         var ground = new PhiloGL.O3D.Plane({
             type: 'x,z',
             xlen: 200,
@@ -174,8 +201,9 @@ var ForestGame = (function() {
             offset: 0,
             colors: [1, 1, 1, 1]
         });
-        
+
         scene.add(ball);
+        scene.add(cube);
         scene.add(ground);
     }
     
@@ -187,9 +215,8 @@ var ForestGame = (function() {
         illuminateScene([0.2, 0.2, 0.2], [0.8, 0.8, 0.8]);
         aimLight([-2, -5, -7]);
         addObjects();
-        moveCamera([0, 3, -7]);
+        moveCamera([0, 3, -7], [0, 40]);
         adjustFog(2, 60, [0.3, 0, 0]);
-        render();
     }
     
     /**
@@ -198,6 +225,20 @@ var ForestGame = (function() {
     function render() {
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
         scene.render();
+    }
+    
+    /**
+     * Start animating the scene at 60fps.
+     */
+    function startAnimation() {
+        animationLoop = setInterval(render, 1000/60);
+    }
+    
+    /**
+     * Stop animating the scene.
+     */
+    function stopAnimation() {
+        clearInterval(animationLoop);
     }
     
     /**
@@ -235,7 +276,8 @@ var ForestGame = (function() {
                 scene = app.scene,
                 camera = app.camera;
                 
-                setUpScene();                
+                setUpScene();
+                startAnimation();
             }
         });
     }
