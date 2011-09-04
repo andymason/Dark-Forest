@@ -28,17 +28,19 @@ var ForestGame = (function() {
         animationLoop = undefined,
         player = {
             'walkingSpeed'  : 0.2,
-            'turningSpeed'  : 0.1,
-            'directionAngle': 0,
-            'directionAngleCount': 0,
+            'turningSpeed'  : 0.05,
+            'xSpeed': 0,
+            'zSpeed': 1,
+            'directionAngle': Math.PI/180 * 90,
+            'targetRadius': 40,
             'walking'       : false
         };
     
     var keyMap = {
         'up'    : [87, 38], // w and up arrow
         'down'  : [83, 40], // s and down arrow
-        'left'  : [65, 37], // a and left arrow
-        'right' : [68, 39]  // d and right arrow
+        'left'  : [68, 39], // d and right arrow
+        'right' : [65, 37] // a and left arrow
     };
 
     /**
@@ -71,29 +73,28 @@ var ForestGame = (function() {
     
         switch (direction) {
             case 'up':
-                cameraPos[2] += player.walkingSpeed;
+                camera.position[0] += player.walkingSpeed * player.xSpeed;
+                camera.position[2] += player.walkingSpeed * player.zSpeed;
                 break;
             case 'down': 
-                cameraPos[2] -= player.walkingSpeed;
+                camera.position[0] -= player.walkingSpeed * player.xSpeed;
+                camera.position[2] -= player.walkingSpeed * player.zSpeed;
                 break;
             case 'left':
-                // TODO: Fix rotation
-                player.directionAngleCount += 0.1;
-                player.directionAngle = Math.sin(player.directionAngleCount);
+                player.directionAngle += player.turningSpeed;
                 break;
             case 'right':
-                player.directionAngleCount -= 0.1;
-                player.directionAngle = Math.sin(player.directionAngleCount);
+                player.directionAngle -= player.turningSpeed;
                 break;
         }
         
-        // TODO: Fix rotation
-        targetPos[0] = Math.asin(player.directionAngle) * 40;
-        targetPos[1] = Math.acos(player.directionAngle) * 40;
+        player.xSpeed = Math.cos(player.directionAngle),
+        player.zSpeed = Math.sin(player.directionAngle);
+       
+        camera.target[0] = (player.targetRadius * player.xSpeed);
+        camera.target[1] = (player.targetRadius * player.zSpeed);
         
-        console.log(targetPos);
-        
-        moveCamera(cameraPos, targetPos);
+        moveCamera(camera.position, camera.target);
         render();
     }
     
