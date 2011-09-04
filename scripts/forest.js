@@ -4,8 +4,8 @@
  *
  * @author  Andrew Mason
  * @email   andrew@coderonfire.com
- * @www     coderonfire.com
- * @github  
+ * @www     http://coderonfire.com/
+ * @github  https://github.com/andymason/Dark-Forest
  * 
  * Just having fun with WebGL :D
  *
@@ -13,7 +13,8 @@
  * a very good introduction to WebGL.
  *
  * TODO:
- *      - The player rotation and movement is broken and needs fixing.
+ *      - Camera target's location updates incorrectly.
+ *      - Dynamically add and remove boxes when leaving player's field of view.
  *
  */
 
@@ -29,10 +30,10 @@ var ForestGame = (function() {
         player = {
             'walkingSpeed'  : 0.2,
             'turningSpeed'  : 0.05,
-            'xSpeed': 0,
-            'zSpeed': 1,
+            'xSpeed'        : 0,
+            'zSpeed'        : 1,
             'directionAngle': Math.PI/180 * 90,
-            'targetRadius': 40,
+            'targetRadius'  : 40,
             'walking'       : false
         };
     
@@ -40,7 +41,7 @@ var ForestGame = (function() {
         'up'    : [87, 38], // w and up arrow
         'down'  : [83, 40], // s and down arrow
         'left'  : [68, 39], // d and right arrow
-        'right' : [65, 37] // a and left arrow
+        'right' : [65, 37]  // a and left arrow
     };
 
     /**
@@ -75,10 +76,14 @@ var ForestGame = (function() {
             case 'up':
                 camera.position[0] += player.walkingSpeed * player.xSpeed;
                 camera.position[2] += player.walkingSpeed * player.zSpeed;
+                camera.target[0] += player.walkingSpeed * player.xSpeed;
+                camera.target[2] += player.walkingSpeed * player.zSpeed;
                 break;
             case 'down': 
                 camera.position[0] -= player.walkingSpeed * player.xSpeed;
                 camera.position[2] -= player.walkingSpeed * player.zSpeed;
+                camera.target[0] -= player.walkingSpeed * player.xSpeed;
+                camera.target[2] -= player.walkingSpeed * player.zSpeed;
                 break;
             case 'left':
                 player.directionAngle += player.turningSpeed;
@@ -104,7 +109,11 @@ var ForestGame = (function() {
      * Handle when the player stops sending input.
      */
     function stopMoving(event) {
-        console.log(getInputDirection(event.event.keyCode));
+        var direction = getInputDirection(event.event.keyCode);
+        
+        if (direction === 'up' || direction === 'down') {
+            player.walking = false;
+        }
     }
     
     
@@ -193,16 +202,39 @@ var ForestGame = (function() {
         // cube.rotation = {  x: 0.4, y: 0, z: 0 };
         cube.update();
         
+        var skyBox = new PhiloGL.O3D.Cube({ colors: [1, 1, 1, 1] });
+        skyBox.position = {  x: 0, y: 50, z: -50 };
+        // cube.rotation = {  x: 0.4, y: 0, z: 0 };
+        skyBox.scale = { x:100, y:100, z:100};
+        skyBox.update();
+        console.log(skyBox.scale);
+        
         var ground = new PhiloGL.O3D.Plane({
             type: 'x,z',
-            xlen: 200,
-            zlen: 200,
+            xlen: 10000,
+            zlen: 10000,
             nx: 5,
             nz: 5,
             offset: 0,
             colors: [1, 1, 1, 1]
         });
-
+        
+        for (var i=0; i<100; i++) {
+            var cube = new PhiloGL.O3D.Cube({ colors: [1, 1, 1, 1] });
+            var height = Math.random() * 4 + 3;
+            var width = Math.random() * 1;
+            var depth = Math.random() * 2;
+            var xPos = (Math.random()*100) - 50;
+            var zPos = (Math.random()*100) - 50;
+            
+            cube.scale = { x: width, y: height, z: depth};
+            cube.position = {  x: xPos, y: height, z: zPos };
+            cube.rotation = {  x: Math.random(), y: Math.random(), z: Math.random() };
+            cube.update();
+            scene.add(cube);
+        }
+        
+        scene.add(skyBox);
         scene.add(ball);
         scene.add(cube);
         scene.add(ground);
@@ -251,8 +283,12 @@ var ForestGame = (function() {
         canvas.width = width;
         canvas.height = height;
         
+        var overlay = document.createElement('div');
+        overlay.id = 'overlay';
+        
         var target = document.querySelector('#oldCRT');
         target.appendChild(canvas);
+        target.appendChild(overlay);
         
         return canvas;
     }
